@@ -1,0 +1,67 @@
+auth_enabled: false
+
+server:
+  http_listen_port: 3100
+
+ingester:
+  lifecycler:
+    address: 127.0.0.1
+    ring:
+      kvstore:
+        store: inmemory
+      replication_factor: 1
+    final_sleep: 0s
+  chunk_idle_period: 5m
+  chunk_retain_period: 30s
+  wal:
+    dir: /tmp/wal
+
+schema_config:
+  configs:
+    - from: 2020-01-01
+      store: boltdb
+      object_store: filesystem
+      schema: v11
+      index:
+        prefix: index_
+        period: 24h
+
+storage_config:
+  boltdb:
+    directory: /tmp/loki/index
+
+  filesystem:
+    directory: /tmp/loki/chunks
+
+# 調整例（4コア VM＋シンプルストレージ環境でテスト済み）
+query_scheduler:
+  # テナントあたり同時処理できるクエリ数
+  max_outstanding_requests_per_tenant: 4096
+
+frontend:
+  # フロントエンドで同時にさばくリクエスト数
+  max_outstanding_per_tenant: 4096
+
+query_range:
+  # シャード分割クエリを並列実行
+  parallelise_shardable_queries: true
+
+limits_config:
+  enforce_metric_name: false
+  reject_old_samples: false
+  # reject_old_samples_max_age: 168h
+  ingestion_rate_mb: 16
+  ingestion_burst_size_mb: 32
+  per_stream_rate_limit: 16MB
+  per_stream_rate_limit_burst: 32MB
+  # 大きい時間窓は分割して投げる（例：15分毎）
+  split_queries_by_interval: 15m
+  # 分割されたクエリの最大並列数
+  max_query_parallelism: 32
+
+chunk_store_config:
+  max_look_back_period: 0s
+
+table_manager:
+  retention_deletes_enabled: false
+  retention_period: 0s

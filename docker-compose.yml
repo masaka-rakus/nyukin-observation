@@ -1,0 +1,49 @@
+version: '3.7'
+
+services:
+  loki:
+    image: grafana/loki:2.9.4
+    container_name: loki
+    ports:
+      - "3100:3100"
+    command: -config.file=/etc/loki/local-config.yaml
+    volumes:
+      - ./loki:/etc/loki
+      - loki-data:/tmp/loki
+      - loki-wal:/tmp/wal
+    user: "0:0"  # Run as root to avoid permission issues
+
+  # alloy:
+  #   image: grafana/alloy:latest
+  #   container_name: alloy
+  #   ports:
+  #     - "12345:12345"
+  #   volumes:
+  #     - ./logs:/logs
+  #     - ./config.alloy:/etc/alloy/config.alloy
+  #     - alloy-positions:/var/lib/alloy/positions
+  #   command: >
+  #     run --server.http.listen-addr=0.0.0.0:12345 --storage.path=/var/lib/alloy/data
+  #     /etc/alloy/config.alloy
+  #   depends_on:
+  #     - loki
+
+  grafana:
+    image: grafana/grafana:10.2.2
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - grafana-storage:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning
+    depends_on:
+      - loki
+
+volumes:
+  grafana-storage:
+  loki-data:
+  loki-wal:
+  # alloy-positions:
