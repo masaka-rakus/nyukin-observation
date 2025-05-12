@@ -1,19 +1,44 @@
-# ログ可視化システム（Grafana, Loki, Promtail）
+# ログ可視化システム（Grafana, Loki, alloy）
 
-このリポジトリには、Grafana、Loki、Promtailを使用したログ可視化システムが含まれています。このシステムを使用して、ログファイルを集約し、視覚的に分析することができます。
+入金管理のログを集約・可視化するためのリポジトリです。Grafana,Loki、Alloyを使用します。
+
+```mermaid
+flowchart LR
+    subgraph "アプリケーション"
+        app[入金管理\<br>プリケーション]
+        logs[ログ<br>ファイル]
+    end
+    
+    subgraph "監視基盤"
+        alloy[Alloy<br>収集エージェント]
+        loki[Loki<br>ログ集約・検索]
+        grafana[Grafana<br>可視化ダッシュボード]
+    end
+    
+    app --> logs
+    logs --> alloy
+    alloy --> loki
+    loki --- grafana
+  
+  
+    classDef app fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    classDef infra fill:#f0f4c3,stroke:#827717,stroke-width:2px
+    class app,logs app
+    class alloy,loki,grafana infra
+```
+
 
 ## システム構成
 
-- **Grafana**: ログデータを視覚化するためのダッシュボードを提供（ポート3000）
-- **Loki**: ログ集約システム（ポート3100）
-- **Promtail**: ログファイルを収集してLokiに転送するエージェント
+- [Grafana](https://grafana.com/ja/grafana/): ログデータを視覚化するためのダッシュボードを提供（ポート3000）
+- [Loki](https://grafana.com/oss/loki/): ログを集約・検索（ポート3100）
+- [Alloy](https://grafana.com/docs/alloy/latest/): 各種ログやメトリクスの収集ツール ここではログを収集し、LokiにPushするために使用
 
 ## セットアップと実行方法
 
-以下のコマンドでシステムを起動します：
+ローカルで起動する際には以下のコマンドでGrafana,Loki,Alloyを起動します：
 
 ```bash
-cd /Users/masahiro.kawakami/repositories/tools/observer
 docker-compose up -d
 ```
 
@@ -61,28 +86,22 @@ LogQL（Lokiのクエリ言語）を使用して、より高度なフィルタ�
 ## ディレクトリ構造
 
 ```
-observer/
-├── docker-compose.yml      # Dockerコンテナの設定
-├── loki/                   # Loki設定ディレクトリ
-│   └── local-config.yaml   # Lokiの設定ファイル
-├── promtail-config.yml     # Promtailの設定ファイル
+nyukin-observation
+├── alloy
+│   └── config.alloy        # Alloyの設定ファイル
 ├── grafana/                # Grafana設定ディレクトリ
 │   └── provisioning/       # Grafana自動設定
 │       ├── dashboards/     # ダッシュボード設定
 │       └── datasources/    # データソース設定
-└── sample_log/             # サンプルログディレクトリ
-    └── 2025_access_log_all # サンプルログファイル
+├── loki/                   # Loki設定ディレクトリ
+│   └── local-config.yaml   # Lokiの設定ファイル
+├── docker-compose.yml      # Grafana,Loki,Alloyのcompose
 ```
-
-## カスタマイズ
-
-- さらにログファイルを追加する場合は、`promtail-config.yml`の`__path__`フィールドを更新し、スタックを再起動してください。
-- リアルタイムログモニタリングのために、Grafanaの「Explore」ビューの自動更新機能を有効にすることができます。
 
 ## トラブルシューティング
 
 - コンテナが起動しない場合は、`docker-compose logs`コマンドでログを確認してください。
-- Lokiにデータが表示されない場合は、Promtailのログを確認してログ収集が正しく行われているか確認してください。
+- Lokiにデータが表示されない場合は、Alloyのログを確認してログ収集が正しく行われているか確認してください。
 - 権限の問題がある場合は、マウントされたボリュームの権限を確認してください。
 
 ## 停止方法
@@ -90,7 +109,6 @@ observer/
 システムを停止するには以下のコマンドを実行します：
 
 ```bash
-cd /Users/masahiro.kawakami/repositories/tools/observer
 docker-compose down
 ```
 
@@ -98,45 +116,4 @@ docker-compose down
 
 ```bash
 docker-compose down -v
-```
-
-
-## Grafanaをサブパス付きで公開する
-
-ポートではなく、Apacheなどで`example.com/grafana/`などで公開し、localhost:3000にproxyする
-
-この場合、grafanaがリダイレクトをはじめリンクURLを生成する関係で、grafana側の設定もいじる必要がある
-
-例：
-```
-https://example.com/grafana/ にアクセス
-↓
-grafanaがログイン画面へのリダイレクトURL生成
-↓
-http://127.0.0.1:3000/login へのリダイレクトが返ってきてしまう
-```
-
-そのため、grafana側でも`https://example.com/grafana/login`のURLを生成するように設定する必要がある
-
-- apacheのconf
-```
-SSLProxyEngine on
-
-ProxyPreserveHost On
-ProxyRequests     Off
-
-<Proxy "http://127.0.0.1:3000/">
-  Require all granted
-</Proxy>
-
-# サブパス /grafana/ → Grafana (localhost:3000)
-ProxyPass        /grafana/ http://127.0.0.1:3000/grafana/ retry=0
-ProxyPassReverse /grafana/ http://127.0.0.1:3000/grafana/
-```
-
-- grafanaのiniファイル(/etc/grafana.ini)
-```
-[server]
-root_url = https://example.com/grafana
-serve_from_sub_path = true
 ```
