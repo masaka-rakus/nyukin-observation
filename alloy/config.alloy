@@ -1,0 +1,55 @@
+local.file_match "access_log" {
+	path_targets = [{
+		__address__ = "localhost",
+		__path__    = "/logs/*.log",
+		job         = "access_logs",
+		source      = "access_logs",
+	}]
+}
+
+loki.process "access_log" {
+	forward_to = [loki.write.default.receiver]
+
+	stage.regex {
+		expression = "\\[(?P<timestamp>\\d{2}/\\w+/\\d{4}:\\d{2}:\\d{2}:\\d{2} [+-]\\d{4})\\]"
+	}
+
+	stage.timestamp {
+		source = "timestamp"
+		format = "02/Jan/2006:15:04:05 -0700"
+	}
+
+	stage.regex {
+		expression = "\"(?P<method>GET|PUT|POST|HEAD|DELETE|PATCH|OPTIONS|CONNECT|TRACE|QUERY) /(?P<prefix>[^/]+)/api(?P<path>/[^ ?\"]+)"
+	}
+
+	stage.replace {
+		expression = "(/[0-9]+)"
+		source     = "path"
+		replace    = "/:id"
+	}
+
+	stage.labels {
+		values = {
+			method = null,
+			path   = null,
+			prefix = null,
+		}
+	}
+}
+
+loki.source.file "access_log" {
+	targets               = local.file_match.access_log.targets
+	forward_to            = [loki.process.access_log.receiver]
+	legacy_positions_file = "/tmp/positions.yaml"
+}
+
+loki.write "default" {
+	endpoint {
+		url = "https://rntwb018102.tk.domain/loki/api/v1/push"
+		tls_config { 
+		  ca_file = "/etc/ssl/certs/tk.domain.cer"
+		}
+	}
+	external_labels = {}
+}
