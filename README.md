@@ -2,34 +2,11 @@
 
 入金管理のログを集約・可視化するためのリポジトリです。Grafana,Loki、Alloyを使用します。
 
-```mermaid
-flowchart LR
-    subgraph "アプリケーション"
-        app[入金管理\<br>プリケーション]
-        logs[ログ<br>ファイル]
-    end
-    
-    subgraph "監視基盤"
-        alloy[Alloy<br>収集エージェント]
-        loki[Loki<br>ログ集約・検索]
-        grafana[Grafana<br>可視化ダッシュボード]
-    end
-    
-    app --> logs
-    logs --> alloy
-    alloy --> loki
-    loki --- grafana
-  
-  
-    classDef app fill:#e1f5fe,stroke:#01579b,stroke-width:2px
-    classDef infra fill:#f0f4c3,stroke:#827717,stroke-width:2px
-    class app,logs app
-    class alloy,loki,grafana infra
-```
-
-
 ## システム構成
 
+- [Grafana](https://grafana.com/ja/grafana/): ログデータを視覚化するためのダッシュボードを提供（ポート3000）
+- [Loki](https://grafana.com/oss/loki/): ログを集約・検索（ポート3100）
+- [Alloy](https://grafana.com/docs/alloy/latest/): 各種ログやメトリクスの収集ツール ここではログを収集し、LokiにPushするために使用
 - [Grafana](https://grafana.com/ja/grafana/): ログデータを視覚化するためのダッシュボードを提供（ポート3000）
 - [Loki](https://grafana.com/oss/loki/): ログを集約・検索（ポート3100）
 - [Alloy](https://grafana.com/docs/alloy/latest/): 各種ログやメトリクスの収集ツール ここではログを収集し、LokiにPushするために使用
@@ -116,4 +93,44 @@ docker-compose down
 
 ```bash
 docker-compose down -v
+```
+
+## Grafanaをサブパス付きで公開する
+
+Apacheで`https://example.com/grafana/`などで公開し、localhost:3000にproxyする場合
+
+grafanaがリダイレクトをはじめとしたリンクURLを生成する関係で、grafana側の設定もいじる必要がある
+
+例：
+```
+https://example.com/grafana/ にアクセス
+↓
+grafanaがログイン画面へのリダイレクトURL生成
+↓
+http://127.0.0.1:3000/login へのリダイレクトが返ってきてしまう
+```
+
+grafana側で`https://example.com/grafana/login`のURLを生成するように設定することで解決する
+
+- apacheのconf
+```
+SSLProxyEngine on
+
+ProxyPreserveHost On
+ProxyRequests     Off
+
+<Proxy "http://127.0.0.1:3000/">
+  Require all granted
+</Proxy>
+
+# サブパス /grafana/ → Grafana (localhost:3000)
+ProxyPass        /grafana/ http://127.0.0.1:3000/grafana/ retry=0
+ProxyPassReverse /grafana/ http://127.0.0.1:3000/grafana/
+```
+
+- grafanaのiniファイル(/etc/grafana.ini)
+```
+[server]
+root_url = https://example.com/grafana
+serve_from_sub_path = true
 ```
