@@ -13,20 +13,21 @@ services:
       - loki-wal:/tmp/wal
     user: "0:0"  # Run as root to avoid permission issues
 
-  # alloy:
-  #   image: grafana/alloy:latest
-  #   container_name: alloy
-  #   ports:
-  #     - "12345:12345"
-  #   volumes:
-  #     - ./logs:/logs
-  #     - ./config.alloy:/etc/alloy/config.alloy
-  #     - alloy-positions:/var/lib/alloy/positions
-  #   command: >
-  #     run --server.http.listen-addr=0.0.0.0:12345 --storage.path=/var/lib/alloy/data
-  #     /etc/alloy/config.alloy
-  #   depends_on:
-  #     - loki
+  alloy:
+    image: grafana/alloy:latest
+    container_name: alloy
+    ports:
+      - "12345:12345"
+    volumes:
+      - ./logs:/logs
+      - ./request_logs:/request_logs  # Mount request_logs directory
+      - ./alloy:/etc/alloy           # Mount the alloy directory containing config.alloy
+      - alloy-positions:/tmp/positions
+    command: >
+      run --server.http.listen-addr=0.0.0.0:12345 --storage.path=/tmp/data
+      /etc/alloy/config.alloy
+    depends_on:
+      - loki
 
   grafana:
     image: grafana/grafana:10.2.2
@@ -46,4 +47,4 @@ volumes:
   grafana-storage:
   loki-data:
   loki-wal:
-  # alloy-positions:
+  alloy-positions:  # Uncommented this volume

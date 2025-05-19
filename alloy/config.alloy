@@ -1,3 +1,4 @@
+// Log type definitions
 local.file_match "access_log" {
 	path_targets = [{
 		__address__ = "localhost",
@@ -7,6 +8,16 @@ local.file_match "access_log" {
 	}]
 }
 
+local.file_match "request_log" {
+	path_targets = [{
+		__address__ = "localhost",
+		__path__    = "/request_logs/*.log",
+		job         = "request_logs",
+		source      = "request_logs",
+	}]
+}
+
+// Access log pipeline
 loki.process "access_log" {
 	forward_to = [loki.write.default.receiver]
 
@@ -36,6 +47,63 @@ loki.process "access_log" {
 			prefix = null,
 		}
 	}
+}
+
+// Request log pipeline
+loki.process "request_log" {
+	forward_to = [loki.write.default.receiver]
+
+	// Extract timestamp like 2025-05-16 10:09:59.714
+	stage.regex {
+		expression = "^(?P<timestamp>\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}\\.\\d{3})"
+	}
+
+	stage.timestamp {
+		source = "timestamp"
+		format = "2006-01-02 15:04:05.000"
+	}
+
+	// Extract schemaName, tenantId, userId, traceId
+	stage.regex {
+		expression = "\\[REQ\\] schemaName:(?P<schema_name>[^ ]+) tenantId:(?P<tenant_id>\\d+) userId:(?P<user_id>\\d+) traceId:(?P<trace_id>[^ ]+) (?P<req_res_type>[><]) "
+	}
+
+	// Transform req_res_type from ">" to "Request" and "<" to "Response"
+	stage.template {
+		source = "req_res_type"
+		template = "{{ if eq .req_res_type \">\" }}Request{{ else if eq .req_res_type \"<\" }}Response{{ else }}{{.req_res_type}}{{ end }}"
+	}
+
+	// Extract request info (HTTP method, endpoint, destination)
+	stage.regex {
+		expression = "> (?P<destination>[^:]+:\\d+) (?P<http_method>GET|PUT|POST|HEAD|DELETE|PATCH|OPTIONS|CONNECT|TRACE) (?P<endpoint>/[^ ]+)"
+	}
+
+	// Extract HTTP status from response logs
+	stage.regex {
+		expression = "< (?P<http_status>\\d+)"
+	}
+
+	// Set labels from extracted values
+	stage.labels {
+		values = {
+			schema_name = null,
+			tenant_id = null,
+			user_id = null,
+			trace_id = null,
+			http_method = null,
+			endpoint = null,
+			http_status = null,
+			destination = null,
+			req_res_type = null,
+		}
+	}
+}
+
+loki.source.file "request_log" {
+	targets               = local.file_match.request_log.targets
+	forward_to            = [loki.process.request_log.receiver]
+	legacy_positions_file = "/tmp/positions.yaml"
 }
 
 loki.source.file "access_log" {
