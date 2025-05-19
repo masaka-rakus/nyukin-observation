@@ -53,19 +53,20 @@ loki.process "access_log" {
 loki.process "request_log" {
 	forward_to = [loki.write.default.receiver]
 
-	// Extract timestamp like 2025-05-16 10:09:59.714
+	// Extract filepath and timestamp like 2025-05-16 10:09:59.714
 	stage.regex {
-		expression = "^(?P<timestamp>\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}\\.\\d{3})"
+		expression = "^(?P<file>[^ ]+) (?P<timestamp>\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}\\.\\d{3})"
 	}
 
 	stage.timestamp {
 		source = "timestamp"
 		format = "2006-01-02 15:04:05.000"
+		location = "Asia/Tokyo"
 	}
 
 	// Extract schemaName, tenantId, userId, traceId
 	stage.regex {
-		expression = "\\[REQ\\] schemaName:(?P<schema_name>[^ ]+) tenantId:(?P<tenant_id>\\d+) userId:(?P<user_id>\\d+) traceId:(?P<trace_id>[^ ]+) (?P<req_res_type>[><]) "
+		expression = "\\[REQ\\] schemaName:(?P<schema_name>[^ ]+) tenantId:(?P<tenant_id>\\d+) userId:(?P<user_id>(\\d+|\\[no user id\\])) traceId:(?P<trace_id>([^ ]+)) (?P<req_res_type>[><]) "
 	}
 
 	// Transform req_res_type from ">" to "Request" and "<" to "Response"
@@ -74,14 +75,20 @@ loki.process "request_log" {
 		template = "{{ if eq .req_res_type \">\" }}Request{{ else if eq .req_res_type \"<\" }}Response{{ else }}{{.req_res_type}}{{ end }}"
 	}
 
-	// Extract request info (HTTP method, endpoint, destination)
+	// Extract request info (HTTP method, path, destination)
 	stage.regex {
-		expression = "> (?P<destination>[^:]+:\\d+) (?P<http_method>GET|PUT|POST|HEAD|DELETE|PATCH|OPTIONS|CONNECT|TRACE) (?P<endpoint>/[^ ]+)"
+		expression = "> (?P<destination>[^:]+:\\d+) (?P<http_method>GET|PUT|POST|HEAD|DELETE|PATCH|OPTIONS|CONNECT|TRACE) (?P<path>/[^ ?]+)"
 	}
 
 	// Extract HTTP status from response logs
 	stage.regex {
 		expression = "< (?P<http_status>\\d+)"
+	}
+
+	stage.replace {
+		expression = "(/[0-9]+)"
+		source     = "path"
+		replace    = "/:id"
 	}
 
 	// Set labels from extracted values
@@ -92,7 +99,7 @@ loki.process "request_log" {
 			user_id = null,
 			trace_id = null,
 			http_method = null,
-			endpoint = null,
+			path = null,
 			http_status = null,
 			destination = null,
 			req_res_type = null,
