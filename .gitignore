@@ -3,6 +3,7 @@ node_modules
 
 logs/
 .idea
+*.log
 
 temp
 _log_bk

@@ -23,7 +23,6 @@ services:
       - ./request_logs:/request_logs  # Mount request_logs directory
       - ./alloy/conf:/etc/alloy/conf  # Updated path to config.alloy
       - ./alloy/cert:/etc/alloy/cert  # Mount certificate directory
-      - ./alloy/scripts:/etc/alloy/scripts  # Mount scripts directory
       - alloy-positions:/tmp/positions
     command: >
       run --server.http.listen-addr=0.0.0.0:12345 --storage.path=/tmp/data

@@ -7,13 +7,10 @@
 - [Grafana](https://grafana.com/ja/grafana/): ログデータを視覚化するためのダッシュボードを提供（ポート3000）
 - [Loki](https://grafana.com/oss/loki/): ログを集約・検索（ポート3100）
 - [Alloy](https://grafana.com/docs/alloy/latest/): 各種ログやメトリクスの収集ツール ここではログを収集し、LokiにPushするために使用
-- [Grafana](https://grafana.com/ja/grafana/): ログデータを視覚化するためのダッシュボードを提供（ポート3000）
-- [Loki](https://grafana.com/oss/loki/): ログを集約・検索（ポート3100）
-- [Alloy](https://grafana.com/docs/alloy/latest/): 各種ログやメトリクスの収集ツール ここではログを収集し、LokiにPushするために使用
 
 ## セットアップと実行方法
 
-ローカルで起動する際には以下のコマンドでGrafana,Loki,Alloyを起動します：
+ローカルで起動する際には以下のコマンドで一括してGrafana,Loki,Alloyを起動します
 
 ```bash
 docker-compose up -d
@@ -60,19 +57,30 @@ LogQL（Lokiのクエリ言語）を使用して、より高度なフィルタ�
   {job="access_logs"} | pattern `<logfile>:<ip> - - [<date>:<timestamp> <offset>] <responsetime> "<method> <path> HTTP/1.1" <status> <size> "<referrer> "<agent>"`
   ```
 
+##　ログの収集
+
+[Grafana Alloy](https://grafana.com/docs/alloy/latest/)を使用してlokiにログデータを送信します。
+AlloyはPromtail同様、ローカルのログファイルの更新を監視し、lokiにログデータをpushします
+そのため、アプリサーバなどログが出力される場所で起動されているのが基本使い方です
+監視対象のログファイルについては`alloy/conf/config.alloy`で設定します
+
 ## ディレクトリ構造
 
 ```
 nyukin-observation
 ├── alloy
-│   └── config.alloy        # Alloyの設定ファイル
-├── grafana/                # Grafana設定ディレクトリ
-│   └── provisioning/       # Grafana自動設定
-│       ├── dashboards/     # ダッシュボード設定
-│       └── datasources/    # データソース設定
-├── loki/                   # Loki設定ディレクトリ
-│   └── local-config.yaml   # Lokiの設定ファイル
-├── docker-compose.yml      # Grafana,Loki,Alloyのcompose
+│   ├── cert/                   # Alloyで使用する証明書ディレクトリ
+│   │    └── *.cer              # Alloyで使用する証明書ファイル(httpsでlokiにpushする場合など)
+│   └── conf/                   # Alloyの設定ディレクトリ  
+│        └── config.alloy       # Alloyの設定ファイル
+├── grafana/                    # Grafana設定ディレクトリ
+│   └── provisioning/           # Grafana自動設定
+│        ├── dashboards/        # ダッシュボード設定
+│        └── datasources/       # データソース設定
+├── loki/                       # Loki設定ディレクトリ
+│   └── config/                 # Alloyの設定ディレクトリ  
+│        └── local-config.yaml  # Lokiの設定ファイル
+├── docker-compose.yml          # Grafana,Loki,Alloyのcompose
 ```
 
 ## トラブルシューティング
