@@ -127,3 +127,7 @@ loki.write "default" {
 	}
 	external_labels = {}
 }
+
+livedebugging {
+  enabled = true
+}
