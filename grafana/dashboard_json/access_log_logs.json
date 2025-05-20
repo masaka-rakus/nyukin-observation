@@ -1,0 +1,197 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "links": [],
+  "liveNow": false,
+  "panels": [
+    {
+      "datasource": {
+        "type": "loki",
+        "uid": "P8E80F9AEF21F6940"
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 11,
+        "x": 0,
+        "y": 0
+      },
+      "id": 3,
+      "options": {
+        "dedupStrategy": "none",
+        "enableLogDetails": true,
+        "prettifyLogMessage": false,
+        "showCommonLabels": false,
+        "showLabels": false,
+        "showTime": false,
+        "sortOrder": "Descending",
+        "wrapLogMessage": false
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "P8E80F9AEF21F6940"
+          },
+          "editorMode": "builder",
+          "expr": "{job=\"access_logs\"} |~ `/api/[^/]+` != `/manage/api/health` | pattern `/var/log/server/<rack>/<host>/LOG/<log_month>/access_log.gz_<log_date>:<ip> - - [<date>:<timestamp> <offset>] <responsetime> \"<method> <path> HTTP/1.1\" <status> <size> \"<referrer>\" \"<agent>\"` | status = `500`",
+          "key": "Q-8248c618-ab34-417a-97be-c4336432d349-0",
+          "legendFormat": "",
+          "queryType": "range",
+          "refId": "B"
+        }
+      ],
+      "title": "500レスポンス",
+      "type": "logs"
+    },
+    {
+      "datasource": {
+        "type": "loki",
+        "uid": "P8E80F9AEF21F6940"
+      },
+      "gridPos": {
+        "h": 12,
+        "w": 11,
+        "x": 11,
+        "y": 0
+      },
+      "id": 2,
+      "options": {
+        "dedupStrategy": "none",
+        "enableLogDetails": true,
+        "prettifyLogMessage": false,
+        "showCommonLabels": false,
+        "showLabels": false,
+        "showTime": false,
+        "sortOrder": "Descending",
+        "wrapLogMessage": false
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "P8E80F9AEF21F6940"
+          },
+          "editorMode": "builder",
+          "expr": "{job=\"access_logs\"} |~ `/api/[^/]+` != `/manage/api/health` != `/api/charge/summary` | pattern `/var/log/server/<rack>/<host>/LOG/<log_month>/access_log.gz_<log_date>:<ip> - - [<date>:<timestamp> <offset>] <responsetime> \"<method> <path> HTTP/1.1\" <status> <size> \"<referrer>\" \"<agent>\"` | line_format `{{.host}} {{.date}} {{.timestamp}} {{.status}} {{.size}} {{.method}} {{.path}} {{.referrer}} {{.agent}}`",
+          "key": "Q-8248c618-ab34-417a-97be-c4336432d349-0",
+          "legendFormat": "",
+          "queryType": "range",
+          "refId": "B"
+        }
+      ],
+      "title": "APIのみ_charge/summary除く フォーマット",
+      "type": "logs"
+    },
+    {
+      "datasource": {
+        "type": "loki",
+        "uid": "P8E80F9AEF21F6940"
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 11,
+        "x": 0,
+        "y": 6
+      },
+      "id": 4,
+      "options": {
+        "dedupStrategy": "none",
+        "enableLogDetails": true,
+        "prettifyLogMessage": false,
+        "showCommonLabels": false,
+        "showLabels": false,
+        "showTime": false,
+        "sortOrder": "Descending",
+        "wrapLogMessage": false
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "P8E80F9AEF21F6940"
+          },
+          "editorMode": "builder",
+          "expr": "{job=\"access_logs\"} |~ `/api/[^/]+` != `/manage/api/health` | pattern `/var/log/server/<rack>/<host>/LOG/<log_month>/access_log.gz_<log_date>:<ip> - - [<date>:<timestamp> <offset>] <responsetime> \"<method> <path> HTTP/1.1\" <status> <size> \"<referrer>\" \"<agent>\"` | responsetime > 5000000",
+          "key": "Q-8248c618-ab34-417a-97be-c4336432d349-0",
+          "legendFormat": "",
+          "queryType": "range",
+          "refId": "B"
+        }
+      ],
+      "title": "レスポンス時間 > 5秒",
+      "type": "logs"
+    },
+    {
+      "datasource": {
+        "type": "loki",
+        "uid": "P8E80F9AEF21F6940"
+      },
+      "gridPos": {
+        "h": 13,
+        "w": 22,
+        "x": 0,
+        "y": 12
+      },
+      "id": 1,
+      "options": {
+        "dedupStrategy": "none",
+        "enableLogDetails": true,
+        "prettifyLogMessage": false,
+        "showCommonLabels": false,
+        "showLabels": false,
+        "showTime": false,
+        "sortOrder": "Descending",
+        "wrapLogMessage": false
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "P8E80F9AEF21F6940"
+          },
+          "editorMode": "builder",
+          "expr": "{job=\"access_logs\"} != `/manage/api/health` != `/server-status` | pattern `<logfile>:<ip> - - [<date>:<timestamp> <offset>] <responsetime> \"<method> <path> HTTP/1.1\" <status> <size> \"<referrer> \"<agent>\"`",
+          "key": "Q-8248c618-ab34-417a-97be-c4336432d349-0",
+          "legendFormat": "",
+          "queryType": "range",
+          "refId": "A"
+        }
+      ],
+      "title": "アクセスログ",
+      "type": "logs"
+    }
+  ],
+  "refresh": "",
+  "schemaVersion": 38,
+  "tags": [],
+  "templating": {
+    "list": []
+  },
+  "time": {
+    "from": "now-2d",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "",
+  "title": "アクセスログ",
+  "uid": "a8b17524-8177-453c-b9b2-eb4408d7ffd9",
+  "version": 8,
+  "weekStart": ""
+}
