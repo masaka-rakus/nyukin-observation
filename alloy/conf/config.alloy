@@ -82,7 +82,7 @@ loki.process "request_log" {
 
 	// Extract HTTP status,process time,response size from response logs
 	stage.regex {
-		expression = "< (?P<http_status>\\d+) (?P<process_time>\\d+)ms.*RESPONSE-SIZE:(?P<response_size>\\d+)byte"
+		expression = "< (?P<http_status>\\d+) (?P<process_time>\\d+)ms.*(RESPONSE-SIZE:(?P<response_size>\\d+)byte)?"
 	}
 
 	stage.replace {
