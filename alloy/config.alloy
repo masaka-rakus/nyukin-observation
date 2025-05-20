@@ -80,9 +80,9 @@ loki.process "request_log" {
 		expression = "> (?P<destination>[^:]+:\\d+) (?P<http_method>GET|PUT|POST|HEAD|DELETE|PATCH|OPTIONS|CONNECT|TRACE) (?P<path>/[^ ?]+)"
 	}
 
-	// Extract HTTP status from response logs
+	// Extract HTTP status,process time,response size from response logs
 	stage.regex {
-		expression = "< (?P<http_status>\\d+)"
+		expression = "< (?P<http_status>\\d+) (?P<process_time>\\d+)ms.*RESPONSE-SIZE:(?P<response_size>\\d+)byte"
 	}
 
 	stage.replace {
@@ -102,6 +102,8 @@ loki.process "request_log" {
 			path = null,
 			http_status = null,
 			destination = null,
+			process_time = null,
+			response_size = null,
 			req_res_type = null,
 		}
 	}
