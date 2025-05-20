@@ -1,4 +1,6 @@
-# sh ssh.sh 2025 04 23
+#!/bin/bash
+
+# ./get_access_log.sh 2025 04 log-server-pass
 
 year=$1
 m=$2
